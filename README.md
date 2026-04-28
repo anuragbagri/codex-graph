@@ -1,7 +1,8 @@
 # codex-graph
 
 `codex-graph` is a public Codex skill plus a local JavaScript/TypeScript codebase
-knowledge graph engine.
+knowledge graph engine. It is designed to be installed from npm and then
+explicitly connected to Codex with `codex-graph install --platform codex`.
 
 It is inspired by Graphify's installable skill plus graph architecture, but scoped
 to OpenAI Codex workflows and JS/TS repositories. The goal is simple: let Codex
@@ -32,13 +33,19 @@ from scratch each time wastes context and time.
 routes, configs, and module relationships. Codex can query that graph first,
 then inspect only the raw files that matter.
 
-## How This Differs From Memory and Vector RAG
+## How This Differs From Graphify, Memory, and Vector RAG
 
+- Graphify is a broader local graph skill pattern; `codex-graph` narrows the
+  surface to OpenAI Codex and JS/TS repositories.
 - It is not conversation memory.
 - It is not vector search.
 - It does not store user preferences or chat history.
 - It is an auditable codebase graph with deterministic local queries.
 - It does not call an LLM or require API keys in v1.
+
+JS/TS-only support keeps v1 predictable: imports, exports, symbols, tests,
+routes, package scripts, and config files can be extracted with the TypeScript
+compiler ecosystem instead of language-agnostic heuristics.
 
 ## Commands
 
@@ -74,6 +81,18 @@ codex-graph build .
 The generated `AGENTS.md` tells Codex to run graph queries before answering
 architecture, dependency, flow, symbol, route, test, or impact questions.
 
+For the Codex app, install the skill locally, restart the app, then open a
+repository that has been initialized with `codex-graph init`.
+
+For Codex CLI or cloud setup flows, add the install and build steps to your setup
+script:
+
+```bash
+npm install -g codex-graph
+codex-graph install --platform codex
+codex-graph build .
+```
+
 ## MCP Setup
 
 ```bash
@@ -106,6 +125,9 @@ files should usually remain ignored.
 - It is codebase knowledge, not user memory.
 
 ## Public Release
+
+Publishing status: not yet published. Before publishing, verify the package name
+is available or publish a scoped package while keeping the `codex-graph` binary.
 
 Before publishing:
 

@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .env
+.codex/
 .codex-graph/cache/
 *.log
 *.tgz

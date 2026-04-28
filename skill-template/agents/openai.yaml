@@ -1,0 +1,12 @@
+name: codex-graph
+description: Query a local JS/TS codebase graph before broad raw-file exploration.
+tools:
+  - codex-graph query
+  - codex-graph explain
+  - codex-graph deps
+  - codex-graph path
+  - codex-graph impact
+guidance:
+  - Run graph queries for architecture, dependency, symbol, route, test, and impact questions.
+  - Use graph output to identify files, then read source directly before editing.
+  - Rebuild the graph when outputs are missing or obviously stale.

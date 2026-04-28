@@ -5,7 +5,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ["dist/**", "coverage/**", "node_modules/**", ".codex-graph/**"]
+    ignores: ["dist/**", "coverage/**", "node_modules/**", ".codex-graph/**", "skill-template/**"]
   },
   {
     files: ["**/*.ts"],
