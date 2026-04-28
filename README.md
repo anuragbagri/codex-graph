@@ -130,10 +130,7 @@ files should usually remain ignored.
 
 ## Public Release
 
-Publishing status: not yet published. The unscoped `codex-graph` npm name
-returned 404 during availability verification on 2026-04-28, so it appears
-available at the time of this check. If it is claimed before release, publish a
-scoped package while keeping the `codex-graph` binary.
+Publishing status: `codex-graph@0.1.0` is published on npm.
 
 Before publishing:
 
