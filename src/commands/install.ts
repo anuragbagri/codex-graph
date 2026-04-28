@@ -33,6 +33,12 @@ export async function uninstallPlatform(platform: string): Promise<string> {
 
 export async function doctor(cwd: string): Promise<string[]> {
   const lines: string[] = [];
+  const requiredMajor = 24;
+  const actualMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10);
+  lines.push(
+    `node: ${process.versions.node} (${actualMajor >= requiredMajor ? "ok" : `requires >=${requiredMajor}`})`
+  );
+
   const skillDir = skillInstallDir();
   const skillOk = await pathExists(path.join(skillDir, "SKILL.md"));
   lines.push(`codex skill: ${skillOk ? "installed" : "missing"} (${skillDir})`);
@@ -44,6 +50,10 @@ export async function doctor(cwd: string): Promise<string[]> {
   const configPath = path.join(cwd, ".codex-graph", "config.json");
   const configOk = await pathExists(configPath);
   lines.push(`project config: ${configOk ? "present" : "missing"} (${configPath})`);
+
+  const cachePath = path.join(cwd, ".codex-graph", "cache", "files.json");
+  const cacheOk = await pathExists(cachePath);
+  lines.push(`file cache: ${cacheOk ? "present" : "missing"} (${cachePath})`);
 
   return lines;
 }

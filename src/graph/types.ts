@@ -62,7 +62,29 @@ export interface GraphStats {
   warnings: number;
   tests: number;
   routes: number;
+  cache?: GraphCacheSummary;
   hotspots: Array<{ id: string; name: string; filePath?: string; score: number }>;
+}
+
+export interface GraphCacheSummary {
+  mode: "full" | "incremental" | "skipped";
+  changedFiles: number;
+  deletedFiles: number;
+  unchangedFiles: number;
+  reason?: string;
+}
+
+export interface FileCacheEntry {
+  sha256: string;
+  size: number;
+  mtimeMs: number;
+}
+
+export interface GraphCache {
+  schemaVersion: 1;
+  graphSchemaVersion: 1;
+  generatedAt: string;
+  files: Record<string, FileCacheEntry>;
 }
 
 export interface BuildOptions {

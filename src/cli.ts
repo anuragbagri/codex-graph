@@ -100,8 +100,16 @@ program
   .option("--cwd <path>", "project cwd", process.cwd())
   .action(async (options: { cwd: string }) => {
     const graph = await updateGraph(path.resolve(options.cwd));
+    const cache = graph.stats.cache;
     console.log(
-      `Updated graph: ${graph.stats.files} files, ${graph.stats.symbols} symbols, ${graph.stats.edges} edges`
+      [
+        `Updated graph: ${graph.stats.files} files, ${graph.stats.symbols} symbols, ${graph.stats.edges} edges`,
+        cache
+          ? `cache: ${cache.mode}, changed ${cache.changedFiles}, deleted ${cache.deletedFiles}, unchanged ${cache.unchangedFiles}`
+          : undefined
+      ]
+        .filter(Boolean)
+        .join("\n")
     );
   });
 

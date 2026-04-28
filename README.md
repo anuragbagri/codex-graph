@@ -15,6 +15,8 @@ npm install -g codex-graph
 codex-graph install --platform codex
 ```
 
+Requires Node.js 24 or newer.
+
 No global install:
 
 ```bash
@@ -100,7 +102,9 @@ codex-graph mcp install
 codex-graph serve
 ```
 
-The MCP server exposes compact graph tools for Codex-compatible clients.
+The MCP installer safely updates `${CODEX_HOME:-~/.codex}/config.toml` with a
+marked `[mcp_servers.codex-graph]` block and backs up an existing config before
+writing. The MCP server exposes compact graph tools for Codex-compatible clients.
 
 ## Outputs
 
@@ -126,8 +130,10 @@ files should usually remain ignored.
 
 ## Public Release
 
-Publishing status: not yet published. Before publishing, verify the package name
-is available or publish a scoped package while keeping the `codex-graph` binary.
+Publishing status: not yet published. The unscoped `codex-graph` npm name
+returned 404 during availability verification on 2026-04-28, so it appears
+available at the time of this check. If it is claimed before release, publish a
+scoped package while keeping the `codex-graph` binary.
 
 Before publishing:
 

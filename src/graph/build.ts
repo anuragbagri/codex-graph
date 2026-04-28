@@ -16,16 +16,81 @@ import {
 
 import { ensureDir, writeJson } from "../project/files.js";
 import { projectGraphDir } from "../project/paths.js";
-import type { BuildOptions, CodexGraph, GraphNode, GraphStats, GraphWarning, NodeType } from "./types.js";
+import { hashFiles, readGraphCache, summarizeCacheChange, writeGraphCache } from "./cache.js";
+import type {
+  BuildOptions,
+  CodexGraph,
+  GraphCacheSummary,
+  GraphNode,
+  GraphStats,
+  GraphWarning,
+  NodeType
+} from "./types.js";
 import { GraphBuilder, nodeId, relativePath, toPosixPath } from "./utils.js";
 
 const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const GRAPH_SCHEMA_VERSION = 1;
 
 export async function buildGraph(options: BuildOptions): Promise<CodexGraph> {
   const root = path.resolve(options.root);
+  const files = await listSourceFiles(root);
+  const fileHashes = await hashFiles(root, files);
+  const cacheSummary: GraphCacheSummary = {
+    mode: "full",
+    changedFiles: files.length,
+    deletedFiles: 0,
+    unchangedFiles: 0,
+    reason: "build command"
+  };
+  const graph = await buildGraphFromFiles(root, files, cacheSummary);
+  if (options.write ?? true) {
+    await writeGraphArtifacts(root, graph);
+    await writeGraphCache(root, fileHashes);
+  }
+  return graph;
+}
+
+export async function updateGraph(root: string): Promise<CodexGraph> {
+  const resolvedRoot = path.resolve(root);
+  const files = await listSourceFiles(resolvedRoot);
+  const fileHashes = await hashFiles(resolvedRoot, files);
+  const cacheSummary = summarizeCacheChange(await readGraphCache(resolvedRoot), fileHashes);
+
+  if (cacheSummary.mode === "skipped") {
+    const existing = await readExistingGraph(resolvedRoot).catch(async () => {
+      const graph = await buildGraphFromFiles(resolvedRoot, files, {
+        mode: "full",
+        changedFiles: files.length,
+        deletedFiles: 0,
+        unchangedFiles: 0,
+        reason: "missing graph"
+      });
+      await writeGraphArtifacts(resolvedRoot, graph);
+      await writeGraphCache(resolvedRoot, fileHashes);
+      return graph;
+    });
+    existing.generatedAt = new Date().toISOString();
+    if (existing.stats.cache?.reason !== "missing graph") {
+      existing.stats.cache = cacheSummary;
+    }
+    await writeGraphArtifacts(resolvedRoot, existing);
+    await writeGraphCache(resolvedRoot, fileHashes);
+    return existing;
+  }
+
+  const graph = await buildGraphFromFiles(resolvedRoot, files, cacheSummary);
+  await writeGraphArtifacts(resolvedRoot, graph);
+  await writeGraphCache(resolvedRoot, fileHashes);
+  return graph;
+}
+
+async function buildGraphFromFiles(
+  root: string,
+  files: string[],
+  cacheSummary: GraphCacheSummary
+): Promise<CodexGraph> {
   const warnings: GraphWarning[] = [];
   const builder = new GraphBuilder();
-  const files = await listSourceFiles(root);
   const project = new Project({
     compilerOptions: {
       allowJs: true,
@@ -88,9 +153,9 @@ export async function buildGraph(options: BuildOptions): Promise<CodexGraph> {
 
   const nodes = builder.getNodes();
   const edges = builder.getEdges();
-  const stats = makeStats(nodes, edges, warnings);
-  const graph: CodexGraph = {
-    schemaVersion: 1,
+  const stats = makeStats(nodes, edges, warnings, cacheSummary);
+  return {
+    schemaVersion: GRAPH_SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
     root,
     nodes,
@@ -98,16 +163,6 @@ export async function buildGraph(options: BuildOptions): Promise<CodexGraph> {
     warnings,
     stats
   };
-
-  if (options.write ?? true) {
-    await writeGraphArtifacts(root, graph);
-  }
-
-  return graph;
-}
-
-export async function updateGraph(root: string): Promise<CodexGraph> {
-  return buildGraph({ root, write: true });
 }
 
 async function listSourceFiles(root: string): Promise<string[]> {
@@ -478,10 +533,20 @@ async function writeGraphArtifacts(root: string, graph: CodexGraph): Promise<voi
   await fs.writeFile(path.join(dir, "CODEX_GRAPH_REPORT.md"), renderReport(graph));
 }
 
+async function readExistingGraph(root: string): Promise<CodexGraph> {
+  const graphPath = path.join(projectGraphDir(root), "graph.json");
+  const graph = JSON.parse(await fs.readFile(graphPath, "utf8")) as CodexGraph;
+  if (graph.schemaVersion !== GRAPH_SCHEMA_VERSION) {
+    throw new Error("schema mismatch");
+  }
+  return graph;
+}
+
 function makeStats(
   nodes: GraphNode[],
   edges: ReturnType<GraphBuilder["getEdges"]>,
-  warnings: GraphWarning[]
+  warnings: GraphWarning[],
+  cacheSummary: GraphCacheSummary
 ): GraphStats {
   const incoming = new Map<string, number>();
   const outgoing = new Map<string, number>();
@@ -507,6 +572,7 @@ function makeStats(
     warnings: warnings.length,
     tests: nodes.filter((node) => node.metadata?.isTest === true).length,
     routes: nodes.filter((node) => node.type === "route").length,
+    cache: cacheSummary,
     hotspots
   };
 }

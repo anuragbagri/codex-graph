@@ -121,20 +121,29 @@ export async function serveMcp(cwd: string): Promise<void> {
 }
 
 export async function installMcp(cwd: string): Promise<string> {
-  const dir = path.join(codexHome(), "mcp");
-  await ensureDir(dir);
-  const target = path.join(dir, "codex-graph.json");
-  const payload = {
-    name: "codex-graph",
-    command: "codex-graph",
-    args: ["serve"],
-    cwd
-  };
+  const home = codexHome();
+  await ensureDir(home);
+  const target = path.join(home, "config.toml");
+  const existing = (await exists(target)) ? await fs.readFile(target, "utf8") : "";
   if (await exists(target)) {
     const backup = `${target}.bak.${Date.now()}`;
     await fs.copyFile(target, backup);
   }
-  await fs.writeFile(target, `${JSON.stringify(payload, null, 2)}\n`);
+  const block = [
+    "[mcp_servers.codex-graph]",
+    'command = "codex-graph"',
+    `args = ["serve", "--cwd", ${tomlString(cwd)}]`,
+    "startup_timeout_ms = 20_000",
+    "default_tools_approval_mode = \"approve\""
+  ].join("\n");
+  await fs.writeFile(target, upsertTomlBlock(existing, "codex-graph:mcp", block));
+
+  const sidecarDir = path.join(home, "mcp");
+  await ensureDir(sidecarDir);
+  await fs.writeFile(
+    path.join(sidecarDir, "codex-graph.json"),
+    `${JSON.stringify({ name: "codex-graph", command: "codex-graph", args: ["serve", "--cwd", cwd], cwd }, null, 2)}\n`
+  );
   return target;
 }
 
@@ -153,4 +162,23 @@ async function exists(filePath: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function upsertTomlBlock(existing: string, name: string, body: string): string {
+  const start = `# ${name}:start`;
+  const end = `# ${name}:end`;
+  const block = `${start}\n${body}\n${end}`;
+  const pattern = new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}`);
+  if (pattern.test(existing)) {
+    return `${existing.replace(pattern, block).trimEnd()}\n`;
+  }
+  return `${existing.trimEnd()}${existing.trim() ? "\n\n" : ""}${block}\n`;
+}
+
+function tomlString(value: string): string {
+  return JSON.stringify(value);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

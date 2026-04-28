@@ -9,8 +9,15 @@ const DEPENDENCY_EDGES = new Set<EdgeType>(["IMPORTS", "DEPENDS_ON", "CALLS", "T
 export async function loadGraph(cwd: string): Promise<CodexGraph> {
   const graphPath = projectGraphPath(cwd);
   try {
-    return JSON.parse(await fs.readFile(graphPath, "utf8")) as CodexGraph;
-  } catch {
+    const graph = JSON.parse(await fs.readFile(graphPath, "utf8")) as CodexGraph;
+    if (graph.schemaVersion !== 1) {
+      throw new Error(`Unsupported graph schema ${graph.schemaVersion}. Run codex-graph build.`);
+    }
+    return graph;
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Unsupported graph schema")) {
+      throw error;
+    }
     throw new Error(`No graph found at ${graphPath}. Run codex-graph build first.`);
   }
 }
