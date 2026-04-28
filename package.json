@@ -6,7 +6,7 @@
   "type": "module",
   "private": false,
   "bin": {
-    "codex-graph": "./dist/cli.js"
+    "codex-graph": "dist/cli.js"
   },
   "files": [
     "dist/",
