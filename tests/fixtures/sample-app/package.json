@@ -1,0 +1,11 @@
+{
+  "name": "sample-app",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "express": "^5.0.0"
+  }
+}
