@@ -1,3 +1,10 @@
+---
+name: codex-graph
+description: Use when working in JavaScript or TypeScript repositories and the user asks about architecture, dependencies, impact, routes, tests, symbols, module relationships, or where behavior lives; query the local codex-graph graph before broad raw-file exploration.
+metadata:
+  short-description: Query local JS/TS repo graphs
+---
+
 # codex-graph
 
 Use this skill when working in JavaScript or TypeScript repositories and the user asks

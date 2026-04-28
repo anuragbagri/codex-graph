@@ -1,6 +1,6 @@
 {
   "name": "codex-graph",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Codex skill and local JS/TS codebase knowledge graph engine.",
   "license": "MIT",
   "type": "module",
