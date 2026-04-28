@@ -17,6 +17,17 @@ codex-graph install --platform codex
 
 Requires Node.js 24 or newer.
 
+The install flow is intentionally two steps:
+
+- `npm install -g codex-graph` installs the `codex-graph` CLI binary on your
+  machine.
+- `codex-graph install --platform codex` explicitly installs the Codex skill into
+  `${CODEX_HOME:-~/.codex}/skills/codex-graph`.
+
+The npm install step does not modify Codex automatically. This avoids hidden
+side effects during package installation and keeps Codex configuration changes
+explicit.
+
 No global install:
 
 ```bash
