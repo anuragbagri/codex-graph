@@ -8,6 +8,15 @@ export default tseslint.config(
     ignores: ["dist/**", "coverage/**", "node_modules/**", ".codex-graph/**", "skill-template/**"]
   },
   {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+        process: "readonly"
+      }
+    }
+  },
+  {
     files: ["**/*.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",

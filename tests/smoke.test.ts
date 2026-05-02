@@ -8,7 +8,7 @@ import { installPlatform, uninstallPlatform } from "../src/commands/install.js";
 import { initProject } from "../src/commands/project.js";
 import { buildGraph, updateGraph } from "../src/graph/build.js";
 import { deps, explain, impact, queryGraph, shortestPath } from "../src/graph/query.js";
-import { writeVisualization } from "../src/graph/visualize.js";
+import { serveVisualization, writeVisualization } from "../src/graph/visualize.js";
 import { installMcp } from "../src/mcp/server.js";
 
 describe("codex-graph", () => {
@@ -72,6 +72,65 @@ describe("codex-graph", () => {
     await expect(fs.readFile(html, "utf8")).resolves.toContain("cytoscape");
   });
 
+  it("serves the visualization over local HTTP without launching a browser", async () => {
+    const app = await copyFixture();
+    const graph = await buildGraph({ root: app, write: true });
+    const logs: string[] = [];
+    const warnings: string[] = [];
+    let openedUrl: string | undefined;
+
+    const server = await serveVisualization(graph, app, {
+      port: 0,
+      logger: {
+        log: (message) => logs.push(message),
+        warn: (message) => warnings.push(message)
+      },
+      openBrowser: async (url) => {
+        openedUrl = url;
+      }
+    });
+
+    try {
+      expect(openedUrl).toBe(server.url);
+      expect(logs).toContain(`Serving graph at ${server.url}`);
+
+      const response = await fetch(server.url);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("text/html");
+      expect(await response.text()).toContain("codex-graph");
+
+      const missing = await fetch(`${server.url}/missing`);
+      expect(missing.status).toBe(404);
+
+      const firstNode = graph.nodes[0];
+      expect(firstNode).toBeDefined();
+      if (!firstNode) {
+        throw new Error("Expected sample graph to include at least one node.");
+      }
+      const updatedName = `${firstNode.name} updated`;
+      await fs.writeFile(
+        path.join(app, ".codex-graph", "graph.json"),
+        `${JSON.stringify(
+          {
+            ...graph,
+            nodes: [{ ...firstNode, name: updatedName }, ...graph.nodes.slice(1)]
+          },
+          null,
+          2
+        )}\n`
+      );
+      await waitForCondition(() =>
+        logs.some((message) => message === "Graph updated. Refresh your browser to see changes.")
+      );
+
+      const refreshed = await fetch(server.url);
+      expect(await refreshed.text()).toContain(updatedName);
+      expect(warnings.every((message) => !message.includes("Could not open browser"))).toBe(true);
+    } finally {
+      await server.close();
+    }
+  });
+
   it("tracks incremental update cache state", async () => {
     const app = await copyFixture();
 
@@ -132,4 +191,15 @@ async function copyFixture(): Promise<string> {
   const target = path.join(tmp, "sample-app");
   await fs.cp(path.resolve("tests/fixtures/sample-app"), target, { recursive: true });
   return target;
+}
+
+async function waitForCondition(condition: () => boolean): Promise<void> {
+  const deadline = Date.now() + 2000;
+  while (Date.now() < deadline) {
+    if (condition()) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error("Timed out waiting for condition.");
 }

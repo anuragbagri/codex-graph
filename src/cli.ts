@@ -12,7 +12,7 @@ import {
 } from "./commands/project.js";
 import { buildGraph, updateGraph } from "./graph/build.js";
 import { deps, explain, impact, queryGraph, shortestPath, loadGraph } from "./graph/query.js";
-import { writeVisualization } from "./graph/visualize.js";
+import { serveVisualization, writeVisualization } from "./graph/visualize.js";
 import { installMcp, serveMcp } from "./mcp/server.js";
 
 const program = new Command();
@@ -201,9 +201,15 @@ program
   .command("visualize")
   .description("Generate .codex-graph/graph.html")
   .option("--cwd <path>", "project cwd", process.cwd())
-  .action(async (options: { cwd: string }) => {
+  .option("--open", "serve graph in browser and watch for changes")
+  .action(async (options: { cwd: string; open?: boolean }) => {
     const cwd = path.resolve(options.cwd);
-    const outPath = await writeVisualization(await loadGraph(cwd), cwd);
+    const graph = await loadGraph(cwd);
+    if (options.open) {
+      await serveVisualization(graph, cwd);
+      return;
+    }
+    const outPath = await writeVisualization(graph, cwd);
     console.log(`Wrote ${outPath}`);
   });
 

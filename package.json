@@ -15,7 +15,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup src/cli.ts --format esm --dts --clean --sourcemap",
+    "build": "tsup src/cli.ts --format esm --dts --clean --sourcemap && node scripts/copy-vendor.mjs",
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
     "lint": "eslint .",
@@ -41,8 +41,10 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.21.0",
     "commander": "^14.0.2",
+    "cytoscape": "^3.33.3",
     "fast-glob": "^3.3.3",
     "ignore": "^7.0.5",
+    "open": "^11.0.0",
     "toml": "^3.0.0",
     "ts-morph": "^27.0.2",
     "zod": "^4.1.12"
